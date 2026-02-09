@@ -4,8 +4,9 @@ data/raw/Detail_Incident_Activity.csv
 data/raw/Detail_Incident.csv
 data/raw/Detail_Interaction.csv
 
-# Excel
-
+# DB
+itsm_bpi2014.db
+kpi_report_bpi2014.xlsx
 
 # Python
 
