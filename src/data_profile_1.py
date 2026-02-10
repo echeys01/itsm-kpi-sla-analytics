@@ -4,10 +4,13 @@ import pandas as pd, numpy as np
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 
-DB_PATH = "ROOT_DIR / output / itsm_bpi2014.db"
-XLSX_PATH = "ROOT_DIR / output / kpi_report_bpi2014.xlsx"
+DB_PATH = ROOT_DIR / "output" / "itsm_bpi2014.db"
+XLSX_PATH = ROOT_DIR / "output" / "kpi_report_bpi2014.xlsx"
 
 def main():
+    print("Database path: ", DB_PATH) # Sanity checks for working db, project directory.
+    print("Working directory: ", Path.cwd())
+
     conn = None
 
     try:
@@ -28,8 +31,15 @@ def main():
 # end main
 
 def load_change_data(csv_change_data, conn) -> None:
-    df_change_data = pd.read_csv(csv_change_data)
-    conn
+    df_change_data = pd.read_csv(csv_change_data, sep=';') # Create DataFrame from ITSM change data.
+    
+    # Obtain shape of DataFrame.
+    row_count = df_change_data.shape[0]
+    col_count = df_change_data.shape[1]
+
+    print(f"Number of rows: ", row_count)
+    print(f"Number of columns: ", col_count)
+# end load    
 
 
 
