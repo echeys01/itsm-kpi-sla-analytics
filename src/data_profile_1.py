@@ -39,21 +39,13 @@ def load_change_data(csv_change_data, conn) -> None:
 
     print(f"Number of rows: ", row_count)
     print(f"Number of columns: ", col_count)
-# end load    
-
-
-
+# end load_change_data
+    
 # def load_incident_activity()
 
 # def load_incident_data()
 
 # def load_interaction_data() 
-
-
-
-
-
-
 
 if __name__ == "__main__":
     main()
