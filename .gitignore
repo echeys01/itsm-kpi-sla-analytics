@@ -9,11 +9,11 @@ itsm_bpi2014.db
 kpi_report_bpi2014.xlsx
 
 # Python
-
-
+__pycache__/
+*.py[cod]
 
 # OS
-
+Thumbs.db
 
 
 
