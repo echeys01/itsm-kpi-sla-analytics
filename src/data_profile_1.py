@@ -20,32 +20,56 @@ def main():
 
     except OSError as os_e: 
         print({os_e})
+        if conn is None:
+            return conn
 
     except sqlite3.Error as sql_e:
         print({sql_e})
+        if conn is None:
+            return conn
 
     csv_change_data = "data/raw/Detail_Change.csv"
-    load_change_data(csv_change_data, conn)
+    load_csv_data(csv_change_data, conn)
 
     conn.close() # type: ignore    
 # end main
 
-def load_change_data(csv_change_data, conn) -> None:
-    df_change_data = pd.read_csv(csv_change_data, sep=';') # Create DataFrame from ITSM change data.
+
+def load_csv_data(csv_data, conn) -> None:
+    df = pd.read_csv(csv_data, sep=';') # Create DataFrame (df) from ITSM change data.
     
     # Obtain shape of DataFrame.
-    row_count = df_change_data.shape[0]
-    col_count = df_change_data.shape[1]
+    get_df_shape(df)
 
-    print(f"Number of rows: ", row_count)
-    print(f"Number of columns: ", col_count)
-# end load_change_data
+    df.info()
+    print(df.isna().sum())
+
+    print(standardize_columns(df))
     
+    
+# end load_csv_data
+    
+
 # def load_incident_activity()
 
 # def load_incident_data()
 
 # def load_interaction_data() 
+
+
+def get_df_shape(df) -> None:
+    row_count = df.shape[0]
+    col_count = df.shape[1]
+
+    print(f"Number of rows: ", row_count)
+    print(f"Number of columns: ", col_count)
+# end get_df_shape    
+
+
+def standardize_columns(df) -> pd.DataFrame:
+    df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_", regex=True)
+    return df
+# end standardize_columns
 
 if __name__ == "__main__":
     main()
