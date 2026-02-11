@@ -31,9 +31,12 @@ def main():
     csv_change_data = "data/raw/Detail_Change.csv"
     load_csv_data(csv_change_data, conn)
 
+    incident_activity_csv = "data/raw/Detail_Incident_Activity.csv"
+    incidents_csv = "data/raw/Detail_Incident.csv"
+    interactions_csv = "data/raw/Detail_Interaction.csv"
+
     conn.close() # type: ignore    
 # end main
-
 
 def load_csv_data(csv_data, conn) -> None:
     df = pd.read_csv(csv_data, sep=';') # Create DataFrame (df) from ITSM change data.
@@ -45,7 +48,6 @@ def load_csv_data(csv_data, conn) -> None:
     print(df.isna().sum())
 
     print(standardize_columns(df))
-    
     
 # end load_csv_data
     
@@ -70,6 +72,7 @@ def standardize_columns(df) -> pd.DataFrame:
     df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_", regex=True)
     return df
 # end standardize_columns
+
 
 if __name__ == "__main__":
     main()
