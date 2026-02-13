@@ -38,6 +38,7 @@ def main():
     conn.close() # type: ignore    
 # end main
 
+
 def load_csv_data(csv_data, conn) -> None:
     df = pd.read_csv(csv_data, sep=';') # Create DataFrame (df) from ITSM change data.
     
