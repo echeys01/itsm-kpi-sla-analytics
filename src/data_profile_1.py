@@ -47,13 +47,96 @@ def main():
 
 
 def load_incident_data(incidents_csv, conn) -> None:
-    y = 1 # placeholder
     df = pd.read_csv(incidents_csv, sep=';')
+
+    get_df_shape(df)
+    print(standardize_columns(df))
+
+    df.to_sql(
+        "raw_incidents",
+        conn,
+        if_exists="replace",
+        index=False,
+        chunksize=5000,
+        method="multi"
+    ) # Initial incident table.
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS incidents (
+            incident_id TEXT PRIMARY KEY,  
+            ci_name TEXT,
+            ci_type TEXT,
+            priority TEXT,
+            service_component TEXT
+        );
+        """
+    ) 
+
+    conn.execute(
+        """
+        INSERT OR REPLACE INTO incidents 
+        (incident_id, ci_name, ci_type, priority, service_component),
+
+        SELECT 
+            incident_id, ci_name, ci_type, priority, service_component
+        FROM raw_incidents;
+        """
+    )    
+
+    conn.commit()
+    conn.close()
 # end load_incident_data
 
 
 def load_incident_activity_data(incident_activity_csv, conn) -> None:
     df = pd.read_csv(incident_activity_csv, sep=';')
+
+    get_df_shape(df)
+    print(standardize_columns(df))
+
+    df.to_sql(
+        "raw_incident_activity",
+        conn,
+        if_exists="replace",
+        index=False,
+        chunksize=5000,
+        method="multi"
+    ) # Initial incident activity table (child of raw_incidents).
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS incident_activity (
+            incident_id TEXT NOT NULL,
+            interaction_id TEXT NOT NULL,
+            incident_activity_number TEXT NOT NULL,
+            incident_activity_type TEXT NOT NULL,
+            date_stamp TEXT,
+            assignment_group TEXT,
+            FOREIGN KEY (incident_id)
+        )
+        """
+    )
+
+    conn.execute(
+        """
+        INSERT OR REPLACE INTO incident_activity (
+            incident_id,
+            interaction_id,
+            incident_activity_number,
+            incident_activity_type,
+            date_stamp,
+            assignment_group
+        )
+
+        SELECT 
+            incident_id, interaction_id, incident_activity_number, incident_activity_type,
+            date_stamp, assignment_group
+
+        FROM raw_incident_activity;
+        """
+    )
+
 # end load_incident_activity_data    
 
 
@@ -84,8 +167,8 @@ def load_change_data(csv_change_data, conn) -> None:
 
     conn.execute(
         """
-        CREATE TABLE IF NOT EXISTS incidents (
-        
+        CREATE TABLE IF NOT EXISTS  (
+            
         
         
         )
