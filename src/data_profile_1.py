@@ -1,6 +1,6 @@
 from pathlib import Path 
-import csv, sqlite3
-import pandas as pd, numpy as np
+import sqlite3
+import pandas as pd
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 
@@ -16,30 +16,29 @@ def main():
     try:
         conn = sqlite3.connect(DB_PATH)
         conn.execute("PRAGMA foreign_keys = ON")
-        cur = conn.cursor()
 
     except OSError as os_e: 
         print(f"File-related error encountered: {os_e}")
         if conn is None:
-            return conn
+            return
 
     except sqlite3.Error as sql_e:
         print(f"Database connection/config error encountered: {sql_e}")
         if conn is None:
-            return conn
+            return 
     # try: ...
 
     # Load raw data first by number of CSV source files.
-    incidents_csv = "data/raw/Detail_Incident.csv"
+    incidents_csv = ROOT_DIR / "data" / "raw" / "Detail_Incident.csv"
     load_incident_data(incidents_csv, conn)
 
-    incident_activity_csv = "data/raw/Detail_Incident_Activity.csv"
-    load_incident_activity_data(incident_activity_csv, conn)
-
-    interactions_csv = "data/raw/Detail_Interaction.csv"
+    interactions_csv = ROOT_DIR / "data" / "raw" / "Detail_Interaction.csv"
     load_interaction_data(interactions_csv, conn)
 
-    csv_change_data = "data/raw/Detail_Change.csv"
+    incident_activity_csv = ROOT_DIR / "data" / "raw" / "Detail_Incident_Activity.csv"
+    load_incident_activity_data(incident_activity_csv, conn)
+
+    csv_change_data = ROOT_DIR / "data" / "raw" / "Detail_Change.csv"
     load_change_data(csv_change_data, conn)
 
     conn.close() # type: ignore    
@@ -47,19 +46,20 @@ def main():
 
 
 def load_incident_data(incidents_csv, conn) -> None:
-    df = pd.read_csv(incidents_csv, sep=';')
+    df = pd.read_csv(incidents_csv, sep=';', low_memory=False) # Create DataFrame (df) from ITSM change data.
 
+    # Obtain shape of DataFrame (rows x cols).
     get_df_shape(df)
-    print(standardize_columns(df))
+    df = standardize_columns(df) # Ensure columns are lowercase, snake_case.
+    print(df.columns)
 
     df.to_sql(
         "raw_incidents",
         conn,
         if_exists="replace",
         index=False,
-        chunksize=5000,
-        method="multi"
-    ) # Initial incident table.
+        chunksize=1000,
+    ) # Create separate table to hold initial raw data.
 
     conn.execute(
         """
@@ -76,32 +76,100 @@ def load_incident_data(incidents_csv, conn) -> None:
     conn.execute(
         """
         INSERT OR REPLACE INTO incidents 
-        (incident_id, ci_name, ci_type, priority, service_component),
+        (incident_id, ci_name, ci_type, priority, service_component)
 
         SELECT 
-            incident_id, ci_name, ci_type, priority, service_component
+            incident_id, 
+            ci_name_aff AS ci_name, 
+            ci_type_aff AS ci_type, 
+            priority, 
+            service_component_wbs_aff AS service_component
         FROM raw_incidents;
         """
     )    
 
     conn.commit()
-    conn.close()
-# end load_incident_data
+# end load_incident_data    
+
+
+def load_interaction_data(interactions_csv, conn) -> None:
+    df = pd.read_csv(interactions_csv, sep=';', low_memory=False)
+
+    get_df_shape(df)
+    df = standardize_columns(df)
+    print(df.columns)
+
+    df.to_sql(
+        "raw_interactions",
+        conn,
+        if_exists="replace",
+        index=False,
+        chunksize=1000
+    )
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS interactions (
+            interaction_id TEXT NOT NULL,
+            ci_name TEXT NOT NULL,
+            ci_type TEXT NOT NULL,
+            service_component TEXT,
+            open_time TEXT NOT NULL,
+            close_time TEXT NOT NULL,
+            status TEXT NOT NULL,
+            priority TEXT,
+            category TEXT,
+            PRIMARY KEY (interaction_id)
+        );
+        """
+    )
+
+    conn.execute(
+        """
+        INSERT OR REPLACE INTO interactions (
+            interaction_id,
+            ci_name, 
+            ci_type,
+            service_component,
+            open_time,
+            close_time,
+            status,
+            priority,
+            category
+        )
+
+        SELECT 
+            interaction_id, 
+            ci_name_aff AS ci_name, 
+            ci_type_aff AS ci_type, 
+            service_comp_wbs_aff AS service_component, 
+            open_time_first_touch AS open_time,
+            close_time, 
+            status, 
+            priority, 
+            category
+
+        FROM raw_interactions;
+        """
+    )
+
+    conn.commit()
+# end load_interaction_data
 
 
 def load_incident_activity_data(incident_activity_csv, conn) -> None:
-    df = pd.read_csv(incident_activity_csv, sep=';')
+    df = pd.read_csv(incident_activity_csv, sep=';', low_memory=False)
 
     get_df_shape(df)
-    print(standardize_columns(df))
+    df = standardize_columns(df)
+    print(df.columns)
 
     df.to_sql(
         "raw_incident_activity",
         conn,
         if_exists="replace",
         index=False,
-        chunksize=5000,
-        method="multi"
+        chunksize=1000
     ) # Initial incident activity table (child of raw_incidents).
 
     conn.execute(
@@ -113,8 +181,12 @@ def load_incident_activity_data(incident_activity_csv, conn) -> None:
             incident_activity_type TEXT NOT NULL,
             date_stamp TEXT,
             assignment_group TEXT,
-            FOREIGN KEY (incident_id)
-        )
+            FOREIGN KEY (incident_id) 
+                REFERENCES incidents(incident_id),
+            FOREIGN KEY (interaction_id)
+                REFERENCES interactions(interaction_id),
+            PRIMARY KEY (incident_id, incident_activity_number)
+        );
         """
     )
 
@@ -130,51 +202,89 @@ def load_incident_activity_data(incident_activity_csv, conn) -> None:
         )
 
         SELECT 
-            incident_id, interaction_id, incident_activity_number, incident_activity_type,
-            date_stamp, assignment_group
+            incident_id, 
+            interaction_id, 
+            incidentactivity_number AS incident_activity_number, 
+            incidentactivity_type AS incident_activity_type,
+            datestamp as date_stamp, 
+            assignment_group
 
         FROM raw_incident_activity;
         """
     )
-
-# end load_incident_activity_data    
-
-
-def load_interaction_data(interactions_csv, conn) -> None:
-    pd.read_csv(interactions_csv, sep=';')
-# end load_interaction_data
+    
+    conn.commit()
+# end load_incident_activity_data
     
 
 def load_change_data(csv_change_data, conn) -> None:
-    df = pd.read_csv(csv_change_data, sep=';') # Create DataFrame (df) from ITSM change data.
+    df = pd.read_csv(csv_change_data, sep=';', low_memory=False) 
     
-    # Obtain shape of DataFrame (rows x cols).
     get_df_shape(df)
-
-    df.info()
-    print(df.isna().sum())
-
-    print(standardize_columns(df)) # Ensure columns are lowercase, have underscore.
+    df = standardize_columns(df)
+    print(df.columns)
 
     df.to_sql(
         "raw_changes",
         conn,
         if_exists="replace",
         index=False,
-        chunksize=5000,
-        method="multi"
-    ) # Create separate table to hold initial raw data.
+        chunksize=1000
+    ) 
 
     conn.execute(
         """
-        CREATE TABLE IF NOT EXISTS  (
-            
-        
-        
+        CREATE TABLE IF NOT EXISTS changes (
+            change_id TEXT NOT NULL,
+            ci_name TEXT,
+            ci_type TEXT,
+            service_component TEXT,
+            planned_start TEXT,
+            planned_end TEXT,
+            actual_start TEXT,
+            actual_end TEXT,
+            cab_approval_needed TEXT,
+            related_interactions TEXT,
+            related_incidents TEXT,
+            PRIMARY KEY (change_id)
         )
         """
     )
-              
+
+    conn.execute (
+        """
+        INSERT OR REPLACE INTO changes (
+            change_id,
+            ci_name,
+            ci_type,
+            service_component,
+            planned_start,
+            planned_end,
+            actual_start,
+            actual_end,
+            cab_approval_needed,
+            related_interactions,
+            related_incidents
+        )
+
+        SELECT 
+            change_id, 
+            ci_name_aff AS ci_name, 
+            ci_type_aff AS ci_type, 
+            service_comp_wbs_aff AS service_component, 
+            planned_start,
+            planned_end, 
+            actual_start, 
+            actual_end, 
+            cab_approval_needed,
+            related_interactions, 
+            related_incidents
+
+        FROM raw_changes;
+        """
+    )
+
+    conn.commit()          
 # end load_change_data
 
 
@@ -187,8 +297,18 @@ def get_df_shape(df) -> None: # Basic helper function to check df dimensions.
 # end get_df_shape    
 
 
-def standardize_columns(df) -> pd.DataFrame:
-    df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_", regex=True)
+def standardize_columns(df) -> pd.DataFrame: # Ensure collapse of additional underscores. 
+    df = df.copy()
+    
+    df.columns = (
+        df.columns.str.strip()
+        .str.lower()
+        .str.replace(r'[^\w]', "_", regex=True)
+        .str.replace(r"_+", "_", regex=True)
+        .str.strip("_")
+    )
+
+    df = df.loc[:, ~df.columns.str.contains('unnamed_')]
     return df
 # end standardize_columns
 
