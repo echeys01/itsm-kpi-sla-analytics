@@ -7,6 +7,8 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 DB_PATH = ROOT_DIR / "output" / "itsm_bpi2014.db"
 XLSX_PATH = ROOT_DIR / "output" / "kpi_report_bpi2014.xlsx"
 
+DEBUG_RAW_COLS = False
+
 def main():
     print("Database path: ", DB_PATH) # Sanity checks for working db, project directory.
     print("Working directory: ", Path.cwd())
@@ -16,6 +18,12 @@ def main():
     try:
         conn = sqlite3.connect(DB_PATH)
         conn.execute("PRAGMA foreign_keys = ON")
+
+        # Drop table statements inserted for testing purposes.
+        conn.execute("DROP TABLE IF EXISTS incident_activity;")
+        conn.execute("DROP TABLE IF EXISTS incidents;")
+        conn.execute("DROP TABLE IF EXISTS interactions;")
+        conn.execute("DROP TABLE IF EXISTS changes;")
 
     except OSError as os_e: 
         print(f"File-related error encountered: {os_e}")
@@ -51,7 +59,7 @@ def load_incident_data(incidents_csv, conn) -> None:
     # Obtain shape of DataFrame (rows x cols).
     get_df_shape(df)
     df = standardize_columns(df) # Ensure columns are lowercase, snake_case.
-    print(df.columns)
+    #print(df.columns)
 
     df.to_sql(
         "raw_incidents",
@@ -88,6 +96,7 @@ def load_incident_data(incidents_csv, conn) -> None:
         """
     )    
 
+    print_schema(conn, "incidents")
     conn.commit()
 # end load_incident_data    
 
@@ -97,7 +106,7 @@ def load_interaction_data(interactions_csv, conn) -> None:
 
     get_df_shape(df)
     df = standardize_columns(df)
-    print(df.columns)
+    #print(df.columns)
 
     df.to_sql(
         "raw_interactions",
@@ -153,6 +162,7 @@ def load_interaction_data(interactions_csv, conn) -> None:
         """
     )
 
+    print_schema(conn, "interactions")
     conn.commit()
 # end load_interaction_data
 
@@ -162,7 +172,7 @@ def load_incident_activity_data(incident_activity_csv, conn) -> None:
 
     get_df_shape(df)
     df = standardize_columns(df)
-    print(df.columns)
+    #print(df.columns)
 
     df.to_sql(
         "raw_incident_activity",
@@ -176,15 +186,13 @@ def load_incident_activity_data(incident_activity_csv, conn) -> None:
         """
         CREATE TABLE IF NOT EXISTS incident_activity (
             incident_id TEXT NOT NULL,
-            interaction_id TEXT NOT NULL,
+            interaction_id TEXT,
             incident_activity_number TEXT NOT NULL,
             incident_activity_type TEXT NOT NULL,
             date_stamp TEXT,
             assignment_group TEXT,
             FOREIGN KEY (incident_id) 
                 REFERENCES incidents(incident_id),
-            FOREIGN KEY (interaction_id)
-                REFERENCES interactions(interaction_id),
             PRIMARY KEY (incident_id, incident_activity_number)
         );
         """
@@ -209,10 +217,12 @@ def load_incident_activity_data(incident_activity_csv, conn) -> None:
             datestamp as date_stamp, 
             assignment_group
 
-        FROM raw_incident_activity;
+        FROM raw_incident_activity AS ri
+        WHERE ri.incident_id IN (SELECT incident_id FROM incidents);
         """
     )
     
+    print_schema(conn, "incident_activity")
     conn.commit()
 # end load_incident_activity_data
     
@@ -222,7 +232,7 @@ def load_change_data(csv_change_data, conn) -> None:
     
     get_df_shape(df)
     df = standardize_columns(df)
-    print(df.columns)
+    #print(df.columns)
 
     df.to_sql(
         "raw_changes",
@@ -271,7 +281,7 @@ def load_change_data(csv_change_data, conn) -> None:
             change_id, 
             ci_name_aff AS ci_name, 
             ci_type_aff AS ci_type, 
-            service_comp_wbs_aff AS service_component, 
+            service_component_wbs_aff AS service_component, 
             planned_start,
             planned_end, 
             actual_start, 
@@ -284,6 +294,7 @@ def load_change_data(csv_change_data, conn) -> None:
         """
     )
 
+    print_schema(conn, "changes")
     conn.commit()          
 # end load_change_data
 
@@ -292,8 +303,8 @@ def get_df_shape(df) -> None: # Basic helper function to check df dimensions.
     row_count = df.shape[0]
     col_count = df.shape[1]
 
-    print(f"Number of rows: ", row_count)
-    print(f"Number of columns: ", col_count)
+    #print(f"Number of rows: ", row_count)
+    #print(f"Number of columns: ", col_count)
 # end get_df_shape    
 
 
@@ -308,9 +319,17 @@ def standardize_columns(df) -> pd.DataFrame: # Ensure collapse of additional und
         .str.strip("_")
     )
 
-    df = df.loc[:, ~df.columns.str.contains('unnamed_')]
+    df = df.loc[:, ~df.columns.str.contains(r"^unnamed")]
     return df
 # end standardize_columns
+
+
+# Basic helper for printing schema for each modeled table (to be expanded).
+def print_schema(conn, table_name) -> None:
+    schema = conn.execute(f"PRAGMA table_info({table_name});")
+    print(table_name)
+    print([col[1] for col in schema])
+# end print_schema
 
 
 if __name__ == "__main__":
