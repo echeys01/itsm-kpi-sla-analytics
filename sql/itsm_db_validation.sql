@@ -49,5 +49,30 @@ SELECT
     (COUNT(*) - COUNT(NULLIF(TRIM(service_component), ''))) * 100.0 / COUNT(*) AS missing_serv_comps
 FROM itsm_changes;
 
+-- Additional validation queries meant to assess current state of database.
+SELECT DISTINCT priority 
+FROM incidents
+ORDER BY priority;
 
+-- Assess ITSM changes by CAB approval.
+SELECT cab_approval_needed, COUNT(*) as itsm_change_count
+FROM itsm_changes
+GROUP BY cab_approval_needed;
 
+-- Assess amount of activity per incident.
+SELECT 
+    COUNT(*) AS incident_activity_count,
+    COUNT(DISTINCT incident_id) AS incident_count
+FROM incident_activity;
+
+-- Assess volume of events by event type.
+SELECT incident_activity_type, COUNT(*) AS incident_activity_count
+FROM incident_activity
+GROUP BY incident_activity_type
+ORDER BY incident_activity_count DESC;
+
+-- Open, close times associated with a particular ci_type.
+SELECT 
+    MIN(open_time) AS min_open_time, MAX(open_time) AS max_open_time 
+FROM interactions
+GROUP BY ci_type;
