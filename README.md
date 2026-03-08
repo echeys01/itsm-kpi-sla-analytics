@@ -11,9 +11,9 @@ Analysis of anonymized, non-synthetic Rabobank IT service desk data from the **2
 
 ## Data Source
 
-Pure CSV data extracted from the **2014 Rabobank BPI Challenge** dataset, which is hosted **4TU.ResearchData**
+Pure CSV data extracted from the **2014 Rabobank BPI Challenge** dataset, which is hosted by **4TU.ResearchData**
 
-**Also: The pure CSV files are not committed to this repository; they are kept locally and entered into `.gitignore` to prevent alteration and distribution.
+**Also: The pure CSV files are not committed to this repository; they are kept locally and entered into `.gitignore` to prevent alteration and distribution.**
 
 ### DOIs
 
