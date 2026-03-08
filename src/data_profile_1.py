@@ -18,6 +18,7 @@ def main():
     try:
         conn = sqlite3.connect(DB_PATH)
         conn.execute("PRAGMA foreign_keys = ON")
+        print(conn.execute("PRAGMA database_list;").fetchall())
 
         # Drop table statements inserted for testing purposes.
         conn.execute("DROP TABLE IF EXISTS incident_activity;")
@@ -72,7 +73,7 @@ def load_incident_data(incidents_csv, conn) -> None:
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS incidents (
-            incident_id TEXT PRIMARY KEY,  
+            incident_id TEXT NOT NULL PRIMARY KEY,  
             ci_name TEXT,
             ci_type TEXT,
             priority TEXT,
@@ -83,8 +84,13 @@ def load_incident_data(incidents_csv, conn) -> None:
 
     conn.execute(
         """
-        INSERT OR REPLACE INTO incidents 
-        (incident_id, ci_name, ci_type, priority, service_component)
+        INSERT OR REPLACE INTO incidents (
+            incident_id, 
+            ci_name, 
+            ci_type, 
+            priority, 
+            service_component
+        )
 
         SELECT 
             incident_id, 
@@ -92,7 +98,8 @@ def load_incident_data(incidents_csv, conn) -> None:
             ci_type_aff AS ci_type, 
             priority, 
             service_component_wbs_aff AS service_component
-        FROM raw_incidents;
+        FROM raw_incidents
+        WHERE NULLIF(TRIM(incident_id), '') IS NOT NULL;
         """
     )    
 
