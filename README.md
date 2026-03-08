@@ -1,7 +1,7 @@
 # itsm-kpi-sla-analytics
 ## Overview 
 
-Analysis of anonymized, non-synthetic Rabobank IT service desk data from the **2014 BPI Challenge** to practice building real-world SLA-like metrics, KPI reporting, and an ITSM visualization layer that is made appropriate for Excel and Power BI.
+Analysis of anonymized, non-synthetic Rabobank IT service desk data from the **2014 BPI Challenge** to practice building real-world SLA-like metrics, KPI reporting, and an ITSM visualization layer that is presented with Excel and Power BI.
 
 **Consists Of:**
 - A Python and pandas script that ingests and standardizes large, semicolon-delimited CSV service desk records.
