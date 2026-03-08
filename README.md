@@ -18,13 +18,13 @@ Pure CSV data extracted from the **2014 Rabobank BPI Challenge** dataset, which 
 ### DOIs
 
 Collection DOI (entire dataset):
-- **BPI Challenge 2014 (collection):** `10.4121/uuid:c3e5d162-0cfd-4bb0-bd82-af5268819c35` :contentReference[oaicite:1]{index=1}
+- **BPI Challenge 2014 (collection):** `https://doi.org/10.4121/uuid:c3e5d162-0cfd-4bb0-bd82-af5268819c35`
 
 Per-file DOIs (as listed by the challenge site):
-- **Change records:** `10.4121/uuid:d5ccb355-ca67-480f-8739-289b9b593aaf` :contentReference[oaicite:2]{index=2}  
-- **Incident records:** `10.4121/uuid:3cfa2260-f5c5-44be-afe1-b70d35288d6d` :contentReference[oaicite:3]{index=3}  
-- **Interaction records:** `10.4121/uuid:3d5ae0ce-198c-4b5c-b0f9-60d3035d07bf` :contentReference[oaicite:4]{index=4}  
-- **Incident activity records:** `10.4121/uuid:86977bac-f874-49cf-8337-80f26bf5d2ef` :contentReference[oaicite:5]{index=5}
+- **Change records:** `https://doi.org/10.4121/uuid:d5ccb355-ca67-480f-8739-289b9b593aaf` 
+- **Incident records:** `https://doi.org/10.4121/uuid:3cfa2260-f5c5-44be-afe1-b70d35288d6d`
+- **Interaction records:** `https://doi.org/10.4121/uuid:3d5ae0ce-198c-4b5c-b0f9-60d3035d07bf` 
+- **Incident activity records:** `https://doi.org/10.4121/uuid:86977bac-f874-49cf-8337-80f26bf5d2ef`
 
 
 
