@@ -47,7 +47,7 @@ SELECT
     (COUNT(*) - COUNT(NULLIF(TRIM(actual_end), ''))) * 100.0 / COUNT(*) AS null_actual_end,
     (COUNT(*) - COUNT(NULLIF(TRIM(cab_approval_needed), ''))) * 100.0 / COUNT(*) AS null_cab_approval,
     (COUNT(*) - COUNT(NULLIF(TRIM(service_component), ''))) * 100.0 / COUNT(*) AS missing_serv_comps
-FROM incidents;
+FROM itsm_changes;
 
 
 
