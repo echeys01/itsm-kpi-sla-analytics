@@ -76,3 +76,8 @@ SELECT
     MIN(open_time) AS min_open_time, MAX(open_time) AS max_open_time 
 FROM interactions
 GROUP BY ci_type;
+
+
+
+
+
