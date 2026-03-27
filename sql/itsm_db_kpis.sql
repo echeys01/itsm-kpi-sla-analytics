@@ -72,6 +72,7 @@ SELECT date_stamp
 FROM incident_activity
 LIMIT 20;
 
+-- CTEs
 -- Parse week data from DD-MM-YYYY format, present in YYYY-MM-DD format.
 SELECT 
     date_stamp,
@@ -83,12 +84,9 @@ SELECT
 FROM incident_activity
 WHERE date_stamp IS NOT NULL
     AND TRIM(date_stamp) <> ''
-LIMIT 20;
+LIMIT 50;
 
-/*SELECT COUNT(*) AS event_count 
-FROM incident_activity 
-GROUP BY */
-
+-- Base query from above inserted to return event counts per week in 2013 and 2014.
 WITH date_format_resolve AS (
     SELECT 
         date_stamp,
@@ -104,5 +102,39 @@ WITH date_format_resolve AS (
 SELECT week_label, COUNT(*) 
 FROM date_format_resolve
 GROUP BY week_label;
+
+SELECT strftime('%Y-%W', date_stamp) AS week_label,
+    COUNT(*) AS event_count
+FROM incident_activity
+WHERE date_stamp IS NOT NULL
+    AND TRIM(date_stamp) <> ''
+GROUP BY week_label;
+
+-- Query itsm_changes, compare actual/planned starts.
+WITH weekly_actual_start AS (
+    SELECT 
+        actual_start,
+        strftime('%Y-%W',
+        date(
+            substr(actual_start, 7, 4) || '-' ||
+            substr(actual_start, 4, 2) || '-' ||
+            substr(actual_start, 1, 2))) AS week_start_label
+    FROM itsm_changes
+    WHERE actual_start IS NOT NULL
+    AND TRIM(actual_start) <> ''
+)
+SELECT week_start_label, COUNT(*) AS change_count
+FROM weekly_actual_start
+GROUP BY week_start_label;
+
+SELECT strftime('%Y-%W', actual_start) AS weekly_start_label,
+    COUNT(*) as change_event_count
+FROM itsm_changes
+WHERE actual_start IS NOT NULL
+    AND TRIM(actual_start) <> ''
+GROUP BY weekly_start_label;
+
+
+
 
 
