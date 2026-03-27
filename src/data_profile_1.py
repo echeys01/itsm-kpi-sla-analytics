@@ -62,6 +62,9 @@ def load_incident_data(incidents_csv, conn) -> None:
     df = standardize_columns(df) # Ensure columns are lowercase, snake_case.
     #print(df.columns)
 
+    df = normalize_id_columns(df, ["incident_id"])
+    df = normalize_datetime_columns(df, ["open_time", "reopen_time", "resolved_time", "close_time"])
+
     df.to_sql(
         "raw_incidents",
         conn,
@@ -115,6 +118,9 @@ def load_interaction_data(interactions_csv, conn) -> None:
     df = standardize_columns(df) # Assign returned copy of DataFrame. 
     #print(df.columns)
 
+    df = normalize_id_columns(df, ["interaction_id"])
+    df = normalize_datetime_columns(df, ["open_time_first_touch", "close_time"])
+    
     df.to_sql(
         "raw_interactions",
         conn,
@@ -180,6 +186,9 @@ def load_incident_activity_data(incident_activity_csv, conn) -> None:
     get_df_shape(df)
     df = standardize_columns(df)
 
+    df = normalize_id_columns(df, ["incident_id", "interaction_id"])
+    df = normalize_datetime_columns(df, ["datestamp"])
+
     df.to_sql(
         "raw_incident_activity",
         conn,
@@ -238,6 +247,9 @@ def load_change_data(csv_change_data, conn) -> None:
     
     get_df_shape(df)
     df = standardize_columns(df)
+
+    df = normalize_id_columns(df, ["change_id"])
+    df = normalize_datetime_columns(df, ["planned_start", "planned_end", "actual_start", "actual_end"])
 
     df.to_sql(
         "raw_changes",
@@ -335,6 +347,28 @@ def print_modeled_schema(conn, table_name) -> None:
     print(table_name)
     print([col[1] for col in schema])
 # end print_schema
+
+
+# Helper functions for ISO date format normalization and invalid checks. 
+def normalize_datetime_columns(df: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
+    df = df.copy()
+    for col in columns:
+        if col in df.columns:
+            df[col] = pd.to_datetime(df[col], dayfirst=True, errors="coerce")
+            df[col] = df[col].dt.strftime("%Y-%m-%d %H:%M:%S")
+    return df
+# end normalize_datetime_columns
+
+
+def normalize_id_columns(df: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
+    df = df.copy()
+    for col in columns:
+        if col in df.columns:
+            df[col] = df[col].where(df[col].notna(), str(None))
+            df[col] = df[col].apply(lambda x: x.strip() if isinstance(x, str) else x)
+            df.loc[df[col] == "", col] = None
+    return df
+# end normalize_id_columns
 
 
 if __name__ == "__main__":
