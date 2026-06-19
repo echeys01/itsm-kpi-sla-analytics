@@ -5,8 +5,8 @@ data/raw/Detail_Incident.csv
 data/raw/Detail_Interaction.csv
 
 # DB
-itsm_bpi2014.db
-kpi_report_bpi2014.xlsx
+output/itsm_bpi2014.db
+output/kpi_report_bpi2014.xlsx
 
 # Python
 __pycache__/
