@@ -39,11 +39,11 @@ WHERE open_time IS NOT NULL AND TRIM(open_time) <> ''
 GROUP BY priority, category, ci_type;
 
 -- Query same as above (with conversion to ISO format).
-SELECT
+/*SELECT
   priority,
   category,
   ci_type,
-  AVG(
+  --AVG(
     (julianday(
         substr(close_time, 7, 4) || '-' || substr(close_time, 4, 2) || '-' || substr(close_time, 1, 2) || substr(close_time, 11)
     ) - julianday(
@@ -53,7 +53,7 @@ SELECT
 FROM interactions
 WHERE open_time IS NOT NULL AND TRIM(open_time) <> ''
   AND close_time IS NOT NULL AND TRIM(close_time) <> ''
-GROUP BY priority, category, ci_type;
+GROUP BY priority, category, ci_type;*/
 
 -- Top service components by incident counts.
 SELECT service_component, COUNT(*) AS incident_count
@@ -73,21 +73,23 @@ FROM incident_activity
 LIMIT 20;
 
 -- CTEs
--- Parse week data from DD-MM-YYYY format, present in YYYY-MM-DD format.
-SELECT 
+-- Parse week data from DD-MM-YYYY format, present in ISO format.
+
+-- 78 - 106, CTEs in case manual conversion to ISO format is needed. 
+/*SELECT 
     date_stamp,
     strftime('%Y-%W',
     date(
-        substr(date_stamp, 7, 4) || '-' ||
+        --substr(date_stamp, 7, 4) || '-' ||
         substr(date_stamp, 4, 2) || '-' ||
         substr(date_stamp, 1, 2))) AS week_label
 FROM incident_activity
 WHERE date_stamp IS NOT NULL
-    AND TRIM(date_stamp) <> ''
-LIMIT 50;
+    --AND TRIM(date_stamp) <> ''
+LIMIT 50;*/
 
 -- Base query from above inserted to return event counts per week in 2013 and 2014.
-WITH date_format_resolve AS (
+/*WITH date_format_resolve AS (
     SELECT 
         date_stamp,
         strftime('%Y-%W',
@@ -101,8 +103,9 @@ WITH date_format_resolve AS (
 )
 SELECT week_label, COUNT(*) 
 FROM date_format_resolve
-GROUP BY week_label;
+GROUP BY week_label;*/
 
+-- Standard queries for incident time stamps.
 SELECT strftime('%Y-%W', date_stamp) AS week_label,
     COUNT(*) AS event_count
 FROM incident_activity
@@ -111,30 +114,19 @@ WHERE date_stamp IS NOT NULL
 GROUP BY week_label;
 
 -- Query itsm_changes, compare actual/planned starts.
-WITH weekly_actual_start AS (
-    SELECT 
-        actual_start,
-        strftime('%Y-%W',
-        date(
-            substr(actual_start, 7, 4) || '-' ||
-            substr(actual_start, 4, 2) || '-' ||
-            substr(actual_start, 1, 2))) AS week_start_label
-    FROM itsm_changes
-    WHERE actual_start IS NOT NULL
-    AND TRIM(actual_start) <> ''
-)
-SELECT week_start_label, COUNT(*) AS change_count
-FROM weekly_actual_start
-GROUP BY week_start_label;
-
-SELECT strftime('%Y-%W', actual_start) AS weekly_start_label,
-    COUNT(*) as change_event_count
+SELECT strftime('%Y-%W', actual_start) AS weekly_actual_start,
+    COUNT(*) AS change_event_count
 FROM itsm_changes
 WHERE actual_start IS NOT NULL
     AND TRIM(actual_start) <> ''
-GROUP BY weekly_start_label;
+GROUP BY weekly_actual_start;
 
-
+SELECT strftime('%Y-%W', planned_start) AS weekly_planned_start,
+    COUNT(*) AS change_event_count
+FROM itsm_changes
+WHERE planned_start IS NOT NULL
+    AND TRIM(planned_start) <> ''
+GROUP BY weekly_planned_start;
 
 
 
